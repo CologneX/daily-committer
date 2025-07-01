@@ -1,0 +1,40 @@
+name: Daily Committer
+
+on:
+  schedule:
+    # Runs every day at midnight UTC. You can adjust the time.
+    # Use a tool/web like crontab.guru to help with the syntax.
+    # On this example, using crontab.guru, I went with "12.00" UTC calculated from 19:00 WIB (Western Indonesian Time)
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  daily-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        # Configures git with a user name and email for the commit
+        # For security reasons, use Action's Secrets to prevent email leaks (I'd like to keep it private yk)
+        # To add Secret, go to the repo's settings, find Security > Secrets and variables > Actions
+        # Click "New repository secret" and then fill in USERNAME for the Name field and YOUR username for the SECRET field
+        # Also do this for EMAIL field, otherwise no EMAIL will show up and fail the action.
+        run: |
+          git config --global user.name ${{ secrets.USERNAME }}
+          git config --global user.email ${{ secrets.EMAIL }}
+
+      - name: Create or update a file
+        # It appends the current date and time to a file named 'daily-log.md'.
+        # If the file doesn't exist, it will be created.
+        run: echo "Commit for $(date)" >> daily-log.md
+
+      - name: Commit and push if there are changes
+        run: |
+          git add daily-log.md
+          git diff-index --quiet HEAD || git commit -m "feat: Daily automated commit"
+          git push origin main
